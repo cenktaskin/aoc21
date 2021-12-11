@@ -24,6 +24,7 @@ def get_win_condition(b_result, part):
     else:
         return np.all(b_result > 0)
 
+
 part = 2
 current = np.zeros_like(boards)
 last_board_result = None
