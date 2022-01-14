@@ -18,6 +18,7 @@ def string_to_one_hot(inp):
     alphabet = np.array(list(string.ascii_lowercase[:7]))
     return np.sum([(alphabet == c).astype(int) for c in inp], axis=0)
 
+
 # I can make this following func work with matrix instead of just vectors to reach numbers directly
 def vect_to_digit(vect):
     return np.arange(10)[np.all(decoder == vect, axis=1)]
@@ -63,6 +64,6 @@ for line in raw_input:
     output_as_vect = np.array([string_to_one_hot(code) for code in output_code])
     each_digit = np.array([vect_to_digit(v) for v in output_as_vect]).flatten()
     output_nr = (each_digit @ np.array([10 ** x for x in range(4)])[::-1].reshape(-1, 1))[0]
-    #print(output_nr)
+    # print(output_nr)
     sum += output_nr
 print(sum)
