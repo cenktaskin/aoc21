@@ -1,5 +1,4 @@
 import itertools
-
 import numpy as np
 
 input_file = "input.txt"
@@ -27,7 +26,8 @@ for x in iter:
     else:
         if (mask[i - 1, j] != 0) and (mask[i, j - 1] != 0):
             if mask[i - 1, j] != mask[i, j - 1]:
-                mask[mask == max(mask[i - 1, j], mask[i, j - 1])] = min(mask[i - 1, j], mask[i, j - 1])
+                mask[mask == max(mask[i - 1, j], mask[i, j - 1])
+                     ] = min(mask[i - 1, j], mask[i, j - 1])
             mask[i, j] = min(mask[i - 1, j], mask[i, j - 1])
         else:
             mask[i, j] = mask[i, j - 1] + mask[i - 1, j]
