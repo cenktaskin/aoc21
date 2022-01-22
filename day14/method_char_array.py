@@ -1,4 +1,4 @@
-import numpy as np
+from day14 import *
 
 
 def show_dict(d):
@@ -6,7 +6,7 @@ def show_dict(d):
         print(f"{k}->{d[k]}")
 
 
-def test_with_char_array(poly, table, step):
+def calculate_iteratively(poly, table, step):
     poly = np.asarray(list(poly))
     print(f"Starting poly:{''.join(poly)}")
     for step in range(step):
@@ -19,12 +19,7 @@ def test_with_char_array(poly, table, step):
         print(f"{''.join(poly)}")
     return ''.join(poly)
 
+
 if __name__ == "__main__":
-    input_file = "test_input.txt"
-    raw_input = np.genfromtxt(input_file, skip_header=2, dtype=str)
-
-    rules = {a: b for a, b in zip(raw_input[:, 0], raw_input[:, -1])}
-    polymer0 = open(input_file, "r").readline().rstrip()
-
-    show_dict(rules)
-    test_with_char_array(polymer0, rules, 8)
+    show_dict(reaction_table)
+    calculate_iteratively(starting_polymer, reaction_table, 10)

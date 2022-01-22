@@ -1,6 +1,6 @@
 import numpy as np
 
-from char_array_trial import show_dict, test_with_char_array
+from method_char_array import show_dict, test_with_char_array
 
 input_file = "test_input.txt"
 raw_input = np.genfromtxt(input_file, skip_header=2, dtype=str)

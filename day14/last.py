@@ -74,35 +74,15 @@ def lay_fib_up_to(target_level):
         seq.append(seq[-1] + seq[-2])
     return seq[:-1]
 
-
-print(lay_fib_up_to(10))
-exit()
+print(lay_fib_up_to(50))
 
 logger.setLevel(logging.INFO)
-import time
 
-total_steps = 10
-# hops = [2 ** x for x in range(int(np.log2(total_steps) + 1))]
-hops = [2 ** x for x in range(int(np.ceil(np.log2(total_steps))) + 1)]
-print(hops)
-wikipedia = {hop: {} for hop in hops}
+total_steps = 5
+wikipedia = {hop: {} for hop in lay_fib_up_to(total_steps)}
 wikipedia[1] = one_step_ahead
-
-start = time.time()
-
 output = forecast_the_polymer(starting_polymer, total_steps)
-hist, counts = np.unique(list(output), return_counts=True)
-print(f"{hist}\n{counts}")
-print(np.max(counts) - np.min(counts))
-print(f"Took {time.time() - start}")
-
-wikipedia = {hop: {} for hop in hops}
-wikipedia[1] = one_step_ahead
-
-start = time.time()
-
-output = forecast_the_polymer_neu(starting_polymer, total_steps)
-hist, counts = np.unique(list(output), return_counts=True)
-print(f"{hist}\n{counts}")
-print(np.max(counts) - np.min(counts))
-print(f"Took {time.time() - start}")
+print(output)
+# hist, counts = np.unique(list(output), return_counts=True)
+# print(f"{hist}\n{counts}")
+# print(np.max(counts) - np.min(counts))
