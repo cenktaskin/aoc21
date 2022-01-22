@@ -1,33 +1,21 @@
-import logging
-import sys
+from day14 import *
 
-import numpy as np
-
-logger = logging.getLogger(__name__)
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
-logger.addHandler(stream_handler)
-
-input_file = "test_input.txt"
-raw_input = np.genfromtxt(input_file, skip_header=2, dtype=str)
-
-all_characters = np.unique(np.array([list(a) for a in raw_input[:, 0]]).flatten())
-starting_polymer = open(input_file, "r").readline().rstrip()
-one_step_ahead = {a: a[0] + b + a[1] for a, b in zip(raw_input[:, 0], raw_input[:, -1])}
+one_step_ahead = {k: k[0] + reaction_table[k] + k[1] for k in reaction_table}
 
 
 def slicer(poly):
     return [poly[j:j + 2] for j in range(len(poly) - 1)]
 
 
-def combine_slices(poly, slic):
+def combine_slices(poly, sl):
     if poly == "":
-        return slic
+        return sl
     else:
-        return poly + slic[1:]
+        return poly + sl[1:]
 
 
 def query_the_pair(pair, at_step):
+    """Checks the given pair in memory, if not creates a recursion to half of the desired step."""
     logger.info(f"Checking {pair=} {at_step=}")
     if pair in wikipedia[at_step]:
         logger.debug(f"Recursive soln to {pair} at step {at_step} = {wikipedia[at_step][pair]}")
@@ -41,6 +29,7 @@ def query_the_pair(pair, at_step):
 
 
 def calculate_from_parts(poly, step):
+    """Given a polymer, slices it and takes it a step further."""
     logger.debug(f"Calculating from parts {poly} using {step=}")
     res = ""
     for sli in slicer(poly):
@@ -74,12 +63,14 @@ def lay_fib_up_to(target_level):
         seq.append(seq[-1] + seq[-2])
     return seq[:-1]
 
-print(lay_fib_up_to(50))
 
-logger.setLevel(logging.INFO)
 
+logger.setLevel(logging.DEBUG)
 total_steps = 5
-wikipedia = {hop: {} for hop in lay_fib_up_to(total_steps)}
+
+hops = [2 ** x for x in range(int(np.ceil(np.log2(total_steps))))]
+print(hops)
+wikipedia = {hop: {} for hop in hops}
 wikipedia[1] = one_step_ahead
 output = forecast_the_polymer(starting_polymer, total_steps)
 print(output)

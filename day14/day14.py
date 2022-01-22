@@ -5,7 +5,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
+stream_handler.setFormatter(logging.Formatter('%(levelname)s:%(message)s'))
 logger.addHandler(stream_handler)
 
 input_file = "test_input.txt"

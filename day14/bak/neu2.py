@@ -1,30 +1,7 @@
-import logging
-import sys
+from day14 import *
+from utils import *
 
-import numpy as np
-
-logger = logging.getLogger(__name__)
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
-logger.addHandler(stream_handler)
-
-input_file = "test_input.txt"
-raw_input = np.genfromtxt(input_file, skip_header=2, dtype=str)
-
-all_characters = np.unique(np.array([list(a) for a in raw_input[:, 0]]).flatten())
-starting_polymer = open(input_file, "r").readline().rstrip()
-one_step_ahead = {a: a[0] + b + a[1] for a, b in zip(raw_input[:, 0], raw_input[:, -1])}
-
-
-def slicer(poly):
-    return [poly[j:j + 2] for j in range(len(poly) - 1)]
-
-
-def combine_slices(poly, slic):
-    if poly == "":
-        return slic
-    else:
-        return poly + slic[1:]
+one_step_ahead = {k: k[0] + reaction_table[k] + k[1] for k in reaction_table}
 
 
 def query_the_pair(pair, at_step):

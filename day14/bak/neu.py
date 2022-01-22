@@ -1,35 +1,18 @@
-import numpy as np
+from day14 import *
+from utils import *
 
-from method_char_array import show_dict, test_with_char_array
-
-input_file = "test_input.txt"
-raw_input = np.genfromtxt(input_file, skip_header=2, dtype=str)
-
-all_characters = np.unique(np.array([list(a) for a in raw_input[:, 0]]).flatten())
-starting_polymer = open(input_file, "r").readline().rstrip()
-one_step_ahead = {a: a[0] + b + a[1] for a, b in zip(raw_input[:, 0], raw_input[:, -1])}
-
-
-def slicer(poly):
-    return [poly[j:j + 2] for j in range(len(poly) - 1)]
-
-
-def combine_slices(poly, slic):
-    if poly == "":
-        return slic
-    else:
-        return poly + slic[1:]
+one_step_ahead = {k: k[0] + reaction_table[k] + k[1] for k in reaction_table}
 
 
 def query_the_wiki(pair, at_step):
     print(f"Checking {pair=} {at_step=}")
     if len(pair) > 2:
         if np.log2(at_step) % 1 != 0:
-            closest_hop = 2**int(np.log2(at_step))
+            closest_hop = 2 ** int(np.log2(at_step))
             print("Closest even step", closest_hop)
             res = calculate_from_parts(pair, closest_hop)
             print("##########################")
-            return query_the_wiki(res, at_step-closest_hop)
+            return query_the_wiki(res, at_step - closest_hop)
         else:
             return calculate_from_parts(pair, at_step)
     else:
