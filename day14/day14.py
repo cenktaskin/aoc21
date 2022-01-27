@@ -40,11 +40,21 @@ reaction_table = {tuple(poly_to_ohe(a)): poly_to_ohe(a[0] + b + a[1]) for a, b i
                   zip(raw_input[:, 0], raw_input[:, -1])}
 
 starting_polymer = open(input_file, "r").readline().rstrip()
+print(starting_polymer)
 
 p = poly_to_ohe(starting_polymer)
+print(p)
+print(pair_vocab)
 for i in range(40):
     p = take_step(p)
+    print(f"Step {i}")
+    print(p)
 
 hist = poly_to_counts(pair_vocab, p, starting_polymer)
 print(hist)
 print(int(hist.max() - hist.min()))
+
+
+d={a:b for a, b in zip(raw_input[:, 0], raw_input[:, -1])}
+for k in d:
+    print(f"{k}->{d[k]}")
