@@ -1,62 +1,67 @@
 import numpy as np
 
-input_file = "test_input.txt"
+input_file = "input.txt"
 raw_input = np.genfromtxt(input_file, dtype=str)
 input_map = np.array([list(x) for x in raw_input], dtype=int)
 
-
-class Node:
-    map = input_map
-    adjacent_distances = np.array([(1, 0), (-1, 0), (0, -1), (0, 1)])
-
-    def __init__(self, coords, via=None):
-        self.coordinates = tuple(coords)
-        self.via = via
-        self.entry_cost = Node.map[self.coordinates]
-        self.cost = None
-
-    def set_cost(self, val):
-        self.cost = val
-
-    def get_neighbours(self):
-        n = self.coordinates + Node.adjacent_distances
-        return n[
-            np.bitwise_and.reduce(n >= 0, axis=1) & np.bitwise_and.reduce(n <= np.array(Node.map.shape) - 1, axis=1)]
-
-    def __str__(self):
-        return f"Node {self.coordinates} (via {self.via}) with cost:{self.cost}"
+adjacent_distances = np.array([(1, 0), (-1, 0), (0, -1), (0, 1)])
 
 
-print(input_map)
+def get_neighbours(coord, borders):
+    n = coord + adjacent_distances
+    return n[np.bitwise_and.reduce(n >= 0, axis=1) & np.bitwise_and.reduce(n <= np.array(borders) - 1, axis=1)]
 
-starting_node = Node((0, 0))
-starting_node.set_cost(0)
 
-queue = [starting_node]
+def draw_the_path(prevs, src, dst):
+    print("drawing")
+    path = np.zeros_like(prevs)
+    while (dst != src) and (dst is not None):
+        path[dst] = 1
+        dst = prevs[dst]
+    return path
 
-end_goal_reached = False
-been_to = np.zeros_like(input_map)
-while not end_goal_reached:
-    current_node = queue[0]
-    print(f"Checking node {current_node}")
-    neighbours = current_node.get_neighbours()
-    print(f"Neighbours:")
-    for n in neighbours:
-        if been_to[tuple(n)]:
-            print(f"We've been to {n}")
-            continue
-        new_node = Node(tuple(n), via=current_node.coordinates)
-        new_node.set_cost(new_node.entry_cost + current_node.cost)
-        queue.append(new_node)
-        print(new_node)
-    explored_node = queue.pop(0)
-    been_to[explored_node.coordinates] = 1
-    # print([k.cost for k in queue])
-    queue.sort(key=lambda x: x.cost)
-    # print([k.cost for k in queue])
-    print(f"Done with node at {current_node.coordinates}")
-    if explored_node.coordinates == tuple(np.array(input_map.shape) - 1):
-        end_goal_reached = True
-        print(f"Visited {len(been_to)} nodes in total, lowest possible cost {explored_node.cost}")
 
-# check if not checking same node exists on queue is improtant?
+def a_star(inp_map, src=(0, 0), dst=None, dijkstra=False):
+    if dst is None:
+        dst = tuple(t - 1 for t in inp_map.shape)
+    visited = np.zeros_like(inp_map, dtype=bool)
+    distances = visited + np.inf
+    distances[src] = 0
+    previous_node = np.zeros_like(inp_map, dtype=object) + np.nan
+
+    width = np.arange(inp_map.shape[0])[::-1]
+    manhattan_dst = np.zeros(inp_map.shape) + width + width.reshape(-1, 1)
+    if dijkstra:
+        manhattan_dst = 0
+
+    while True:
+        canditates = distances.copy() + manhattan_dst
+        canditates[visited] = np.inf
+        current_node = np.unravel_index(np.argmin(canditates), canditates.shape)
+
+        if current_node == dst or canditates[current_node] == np.inf:
+            print(f"{np.sum(visited)} nodes have been visited")
+            return draw_the_path(previous_node, src, dst)
+
+        for n in get_neighbours(current_node, inp_map.shape):
+            neighb = tuple(n)
+            if ~visited[neighb]:
+                new_dist = inp_map[neighb] + distances[current_node]
+                if new_dist < distances[neighb]:
+                    distances[neighb] = new_dist
+                    previous_node[neighb] = current_node
+
+        visited[current_node] = True
+
+
+# shortest_path = a_star(input_map, initial_node)
+# print(shortest_path)
+# print(np.sum(shortest_path * input_map))
+
+
+# part 2
+new_map = np.vstack([np.hstack([input_map + i for i in range(5)]) + i for i in range(5)])
+new_map[new_map > 9] -= 9  # one subtraction is enough since max increase is +8
+shortest_path = a_star(new_map)
+print(shortest_path)
+print(np.sum(shortest_path * new_map))
