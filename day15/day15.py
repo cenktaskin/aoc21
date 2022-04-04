@@ -1,80 +1,85 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time as t
 
-#try switching to a priority queue instead of array list, maybe it would be better
-
+# don't want to tire the computer so this solves in ~20 sec
+t0 = t.time()
 input_file = "input.txt"
 raw_input = np.genfromtxt(input_file, dtype=str)
 input_map = np.array([list(x) for x in raw_input], dtype=int)
 
+#print(input_map)
+
 adjacent_distances = np.array([(1, 0), (-1, 0), (0, -1), (0, 1)])
 
 
-def get_neighbours(coord, borders):
+def get_neighbors(coord, borders):
     n = coord + adjacent_distances
     return n[np.bitwise_and.reduce(n >= 0, axis=1) & np.bitwise_and.reduce(n <= np.array(borders) - 1, axis=1)]
 
+def iterate_a_node(queue, visited, input_map):
+    # disect element to parts
+    current_node_ind = np.argmin(queue[:, :1])
+    current_node_coord = queue[current_node_ind, 1:3]
+    current_cost = queue[current_node_ind, 0]
+    #print(f"Current node {current_node_coord}")
+    for neighbor in get_neighbors(current_node_coord, input_map.shape):
+        if not visited[tuple(neighbor)]:
+            #print(f"Checking neighbor at {neighbor}")
+            entry_cost = input_map[tuple(neighbor)]
+            new_entry = np.insert(np.array([neighbor, current_node_coord]).flatten(), 0, entry_cost+current_cost, axis=0)
+            #print(f"New entry {new_entry}")
+            already_explored = np.all(queue[:, 1:3] == new_entry[1:3], axis=1)
+            if np.any(already_explored):
+                old_ind = np.where(already_explored)[0][0]
+                old_price = queue[old_ind,0]
+                new_price = new_entry[0]
+                #print(f"{old_price=}")
+                #print(f"{new_price=}")
+                if new_price < old_price:
+                    #print("Found a better way")
+                    queue[old_ind] = new_entry
+            else:
+                queue = np.vstack([queue, new_entry])
+    #print(f"Done with {current_node_coord}")
+    #print(f"{queue=}")
+    visited[tuple(current_node_coord)] = True
+    queue = np.delete(queue, current_node_ind, axis=0)
 
-def draw_the_path(prevs, src, dst, map):
-    path = np.zeros_like(prevs)
-    while (dst != src) and (dst is not None):
-        path[dst] = 1
-        dst = prevs[dst]
-    print(f"Shortest path \n {path} \n {np.sum(path * map)}")
-    return path
+    if np.all(current_node_coord == np.array(input_map.shape) - 1):
+        print(current_node_coord)
+        print(current_cost)
+        print("Done")
+        # finished
+        print(f"{t.time() - t0}")
+        exit()
+    #print(visited)
+    #print("Queue after removal")
+    #print(queue)
+    #print("\n*********\n")
+    return queue
+
+part_2 = True
+if part_2:
+    new_map = np.vstack([np.hstack([input_map + i for i in range(5)]) + i for i in range(5)])
+    new_map[new_map > 9] -= 9  # one subtraction is enough since max increase is +8
+    input_map = new_map
+
+visited = np.zeros_like(input_map, dtype=bool)
+queue = np.array([0, 0, 0, -1, -1]).reshape(1,5)
+
+#print(queue)
+
+# element : [cost, y, x, prev_y, prev_x]
+i=0
+while True:
+    queue = iterate_a_node(queue, visited, input_map)
 
 
-def a_star(inp_map, src=(0, 0), dst=None, dijkstra=False):
-    if dst is None:
-        dst = tuple(t - 1 for t in inp_map.shape)
-    visited = np.zeros_like(inp_map, dtype=bool)
-    distances = visited + np.inf
-    distances[src] = 0
-    previous_node = np.zeros_like(inp_map, dtype=object) + np.nan
+    #i += 1
+    #if i % 5000 == 0:
+    #    plt.imshow(visited)
+    #    plt.show(block=False)
+    #    plt.pause(10 ** -250)
+    #    plt.clf()
 
-    width = np.arange(inp_map.shape[0])[::-1]
-    manhattan_dst = np.zeros(inp_map.shape) + width + width.reshape(-1, 1)
-    if dijkstra:
-        manhattan_dst = 0
-
-    plt.ion()
-    plt.pause(0.001)
-    plt.figure()
-    i=0
-    while True:
-        i+=1
-        if i%1000==0:
-            plt.imshow(visited)
-            plt.show(block=False)
-            plt.pause(10**-250)
-            plt.clf()
-
-        canditates = distances.copy() + manhattan_dst
-        canditates[visited] = np.inf
-        current_node = np.unravel_index(np.argmin(canditates), canditates.shape)
-        #print(f"Checking node {current_node} with cost {canditates[current_node]}")
-        if current_node == dst or canditates[current_node] == np.inf:
-            print(f"{np.sum(visited)} nodes have been visited")
-            return draw_the_path(previous_node, src, dst, inp_map)
-
-        for n in get_neighbours(current_node, inp_map.shape):
-            neighb = tuple(n)
-            if ~visited[neighb]:
-                new_dist = inp_map[neighb] + distances[current_node]
-                if new_dist < distances[neighb]:
-                    distances[neighb] = new_dist
-                    previous_node[neighb] = current_node
-
-        visited[current_node] = True
-
-
-#shortest_path = a_star(input_map)
-#print(shortest_path)
-#print(np.sum(shortest_path * input_map))
-
-# part 2
-new_map = np.vstack([np.hstack([input_map + i for i in range(5)]) + i for i in range(5)])
-new_map[new_map > 9] -= 9  # one subtraction is enough since max increase is +8
-# input_map = new_map  # uncomment to execute part 2
-print(new_map.shape)
-shortest_path = a_star(new_map)
