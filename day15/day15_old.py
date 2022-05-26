@@ -48,7 +48,7 @@ def a_star(inp_map, src=(0, 0), dst=None, dijkstra=False, t0=0):
             print(time.time()-t0)
             t0 = time.time()
         i+=1
-        if i%5000==0:
+        if i%1000==0:
             plt.imshow(visited)
             plt.show(block=False)
             plt.pause(10**-250)

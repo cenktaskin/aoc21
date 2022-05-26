@@ -29,9 +29,9 @@ def iterate_a_node(queue, visited, input_map):
             entry_cost = input_map[tuple(neighbor)]
             new_entry = np.insert(np.array([neighbor, current_node_coord]).flatten(), 0, entry_cost+current_cost, axis=0)
             #print(f"New entry {new_entry}")
-            already_explored = np.all(queue[:, 1:3] == new_entry[1:3], axis=1)
-            if np.any(already_explored):
-                old_ind = np.where(already_explored)[0][0]
+            alread_in_queue = np.all(queue[:, 1:3] == new_entry[1:3], axis=1)
+            if np.any(alread_in_queue):
+                old_ind = np.where(alread_in_queue)[0][0]
                 old_price = queue[old_ind,0]
                 new_price = new_entry[0]
                 #print(f"{old_price=}")
@@ -76,10 +76,10 @@ while True:
     queue = iterate_a_node(queue, visited, input_map)
 
 
-    #i += 1
-    #if i % 5000 == 0:
-    #    plt.imshow(visited)
-    #    plt.show(block=False)
-    #    plt.pause(10 ** -250)
-    #    plt.clf()
+    i += 1
+    if i % 1000 == 0:
+        plt.imshow(visited)
+        plt.show(block=False)
+        plt.pause(10 ** -250)
+        plt.clf()
 
