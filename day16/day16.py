@@ -4,67 +4,72 @@ def hex2bin(ch):
         diff -= 7  # to make up for the chars between
     return bin(9 + diff)[2:].zfill(4)
 
-
-def parse_literal_value(msg):
-    PACKET_LEN = len(msg)
-    print(f"literal \n{msg}")
-    binary_string = ""
-    while True:
-        header, four_bits, msg = msg[0], msg[1:5], msg[5:]
-        print(f"{four_bits:>{PACKET_LEN - len(msg)}}")
-        binary_string += four_bits
-        if header == '0':
-            break
-    return binary_string, msg
+def convert_hex_to_bin(msg):
+    while msg[-1] == '0':
+        msg = msg[:-1]
+    return "".join([hex2bin(ch) for ch in msg])
 
 
 def parse_packet_header(msg):
-    return int(msg[:3], 2), int(msg[3:6], 2), msg[6:]
+    return msg[:3], msg[3:6], msg[6:]
 
 
-def read_packet(bits):
-    if len(bits) == 0:
-        return 0
-    PACKET_LEN = len(bits)
-    print("new packet-------------------------------")
-    print(bits)
-    version, type_id, bits = parse_packet_header(bits)
-    print(f"{version=},{type_id=}")
-    print(f"{bits:>{PACKET_LEN}}")
-    if type_id == 4:
-        _, leftover = parse_literal_value(bits)
-        print("literal leftover", {leftover})
-        if len(leftover) > 0:
-            if int(leftover, 2) == 0:
-                leftover = ""
-        read_packet(leftover)  # literal parsin can't call, only operators can call
+def parse_literal_value(msg):
+    packet_len = len(msg)
+    print(f"{msg}")
+    binary_string = ""
+    while True:
+        header, four_bits, msg = msg[0], msg[1:5], msg[5:]
+        print(f"{four_bits:>{packet_len - len(msg)}}")
+        binary_string += four_bits
+        if header == '0':
+            break
+    return msg, binary_string
+
+
+def read_packet(msg, version_sum=0):
+    print(msg)
+    print("parsing header")
+    version, type_id, body = parse_packet_header(msg)
+    version_sum += int(version, 2)
+    print(f"version:{int(version, 2)}")
+    print(f"{body:>{len(msg)}}")
+    if int(type_id, 2) == 4:
+        print(f"literal")
+        body, literal_string = parse_literal_value(body)
+        print(f"return body {body}, {int(literal_string, 2)}")
+        if len(body) == 0:
+            print("done")
+        elif len(body) < 4:
+            if int(body, 2) == 0:
+                print("just extra 0s, done")
     else:
-        length_type_id, bits = int(bits[0]), bits[1:]
-        print(f"{length_type_id=}")
-        match length_type_id:
+        length_type_id, body = body[0], body[1:]
+        match int(length_type_id, 2):
             case 0:
-                length, bits = int(bits[:15], 2), bits[15:]
-                print(f"{length=}")
-                l = len(bits)
-                print(f"{bits[:length]:>{PACKET_LEN - l + length}}")
-                print(f"{bits[length:]:>{PACKET_LEN}}")
-                read_packet(bits[:length])
-                read_packet(bits[length:])
+                print(f"length_type_id is 0")
+                subpacket_length, body = int(body[:15], 2), body[15:]
+                print(f"{subpacket_length=}")
+                length_read = 0
+                while length_read != subpacket_length:
+                    left, version_sum = read_packet(body, version_sum)
+                    length_read += len(body) - len(left)
+                    body = left
             case 1:
-                length, bits = int(bits[:11], 2), bits[11:]
-                print(f"subp count={length}")
-                print(f"{bits:>{PACKET_LEN}}")
-                for _ in range(length):
-                    bits = read_packet(bits)
+                print(f"length_type_id is 1")
+                subpacket_count, body = int(body[:11], 2), body[11:]
+                print(f"{subpacket_count=}")
+                for i in range(subpacket_count):
+                    print(f"{i}th subpkg")
+                    body, version_sum = read_packet(body, version_sum)
+    return body, version_sum
 
-
-# don't delete what you have read just track
 
 if __name__ == "__main__":
-    input_file = "test_input.txt"
+    input_file = "input.txt"
     with open(input_file, 'r') as f:
         raw_input = f.read()
-    raw_input = "D2FE28"
-    packet = "".join([hex2bin(ch) for ch in raw_input])
-    val, rest = parse_literal_value(packet)
-    print(f"{val=},{rest=}")
+
+    packet = convert_hex_to_bin(raw_input)
+    _, sum_of_vers = read_packet(packet)
+    print(f"{sum_of_vers=}")
