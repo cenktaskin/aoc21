@@ -1,42 +1,18 @@
-from day16 import parse_literal_value, convert_hex_to_bin
+from day16 import parse_literal_value, convert_hex_to_bin, read_operator_packet
 import math
 
 
-def read_operator_packet(msg):
-    print(f"reading operator packet \n{msg}")
-    length_type_id, msg = int(msg[0]), msg[1:]
-    print(f"{length_type_id=}")
-    body_start_idx = 15 - length_type_id * 4
-    subpacket_len, body = int(msg[:body_start_idx], 2), msg[body_start_idx:]
-    print(f"subp_len_info:{subpacket_len}")
-    print(f"{body:>{len(msg) + 1}}")
-    subpackets = []
-    length_read = 0
-    while length_read != subpacket_len:
-        initial_len = len(body)
-        value, body = read_packet(body)
-        subpackets.append(value)
-        match length_type_id:
-            case 0:
-                length_read += initial_len - len(body)
-            case 1:
-                length_read += 1
-        print(f"subpkg read:{length_read}/{subpacket_len}")
-
-    return subpackets, body
-
-
 def read_packet(msg):
-    print(f"reading packet \n{msg}")
+    # print(f"reading packet \n{msg}")
     version, type_id, body = msg[:3], msg[3:6], msg[6:]
-    print(f"version={int(version, 2)}")
-    print(f"type={int(type_id, 2)}")
-    print(f"{body:>{len(msg)}}")
+    # print(f"version={int(version, 2)}")
+    # print(f"type={int(type_id, 2)}")
+    # print(f"{body:>{len(msg)}}")
     if int(type_id, 2) == 4:
         value, left = parse_literal_value(body)
         value = int(value, 2)
     else:
-        subpackets, left = read_operator_packet(body)
+        subpackets, left = read_operator_packet(body, read_packet)
         match int(type_id, 2):
             case 0:
                 value = sum(subpackets)

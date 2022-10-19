@@ -20,7 +20,7 @@ def parse_literal_value(msg):
     return binary_string, msg
 
 
-def read_operator_packet(msg):
+def read_operator_packet(msg, read_func):
     logging.debug(f"reading operator packet \n{msg}")
     length_type_id, msg = int(msg[0]), msg[1:]
     logging.debug(f"{length_type_id=}")
@@ -32,7 +32,7 @@ def read_operator_packet(msg):
     length_read = 0
     while length_read != subpacket_len:
         initial_len = len(body)
-        value, body = read_packet(body)
+        value, body = read_func(body)
         subpackets.append(value)
         match length_type_id:
             case 0:
@@ -55,13 +55,13 @@ def read_packet(msg):
         logging.debug(f"literal ret {value, left}")
         value = int(version, 2)
     else:
-        subpackets, left = read_operator_packet(body)
-        value = part1_value_calculator(subpackets, version, type_id)
+        subpackets, left = read_operator_packet(body, read_packet)
+        value = sum(subpackets) + int(version, 2)
     return value, left
 
 
-def part1_value_calculator(subs, vers, _):
-    return sum(subs) + int(vers, 2)
+# def part1_value_calculator(subs, vers, _):
+#     return sum(subs) + int(vers, 2)
 
 
 def initiate_logger(level=logging.WARNING):
