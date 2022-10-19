@@ -1,14 +1,5 @@
-def hex2bin(ch):
-    diff = ord(ch) - ord(str(9))
-    if ord(ch) >= 65:
-        diff -= 7  # to make up for the chars between
-    return bin(9 + diff)[2:].zfill(4)
-
-
 def convert_hex_to_bin(msg):
-    if msg[-1:] == "\n":
-        msg = msg[:-1]
-    return "".join([hex2bin(ch) for ch in msg])
+    return "".join(f"{int(a, 16):0>4b}" for a in msg)
 
 
 def parse_literal_value(msg):
