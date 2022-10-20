@@ -40,8 +40,8 @@ def read_operator_packet(msg, is_part1):
 
 
 def read_packet(msg, is_part1):
-    version, type_id, body = msg[:3], msg[3:6], msg[6:]
-    if int(type_id, 2) == 4:
+    version, type_id, body = msg[:3], int(msg[3:6], 2), msg[6:]
+    if type_id == 4:
         value, left = parse_literal_value(body)
         if is_part1:
             value = version
@@ -50,9 +50,9 @@ def read_packet(msg, is_part1):
         subpackets, left = read_operator_packet(body, is_part1)
         if is_part1:
             subpackets.append(int(version, 2))
-            type_id = "0"
+            type_id = 0
 
-        match int(type_id, 2):
+        match type_id:
             case 0:
                 value = sum(subpackets)
             case 1:
@@ -70,12 +70,13 @@ def read_packet(msg, is_part1):
 
     return value, left
 
-
+# TODO You can fix this script: Just merge the two reading functions I think they are overly specialized unnecessarily
 def main():
     input_file = "input.txt"
     with open(input_file, 'r') as f:
         raw_input = f.read()
-    # raw_input = "A0016C880162017C3686B18A3D4780"
+    test_inputs = ["D2FE28", "38006F45291200", "EE00D40C823060"]
+    raw_input = test_inputs[0]
 
     packet = convert_hex_to_bin(raw_input)
     ret, _ = read_packet(packet, is_part1=True)
