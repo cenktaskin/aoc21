@@ -53,6 +53,12 @@ def add(a, b):
     return new_mat
 
 
+def explode(inp):
+    a = inp[-1]  # last row
+    exploding_ones = np.where(~np.isnan(a))
+    print(exploding_ones)
+
+
 raw_a = "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"
 raw_a = "[1,2]"
 raw_b = "[[3,4],5]"
@@ -60,8 +66,9 @@ raw_b = "[[3,4],5]"
 a = read_topopgrahy(raw_a)
 b = read_topopgrahy(raw_b)
 
-print(a)
-print(b)
+print(f"{a=}")
+print(f"{b=}")
 
-c = add(a,b)
-print(c)
+sum = add(a, b)
+print(f"{sum=}")
+print(explode(sum))
