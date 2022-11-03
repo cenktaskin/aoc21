@@ -43,8 +43,7 @@ def explode(inp):
 
 def split(inp: np.ndarray) -> np.ndarray:
     split_canditates = np.argwhere(inp >= 10)
-    print(f"{split_canditates}")
-    to_be_split = np.argwhere(inp >= 10)[0]
+    to_be_split = split_canditates[np.argmin(split_canditates[:, 1])]
     val = inp[*to_be_split]
     inp[*to_be_split] = np.nan
     new_mat = np.hstack([inp[:, : to_be_split[1] + 1], inp[:, to_be_split[1] :]])
@@ -53,16 +52,16 @@ def split(inp: np.ndarray) -> np.ndarray:
     return new_mat
 
 
-def reduce(inp: np.ndarray) -> np.ndarray:
+def reduce_it(inp: np.ndarray) -> np.ndarray:
     print(f"Array to be reduced\n{inp}")
     if np.any(to_be_exploded := ~np.isnan(inp[-1])):
         print("Following entries on last row need exploding")
         print(to_be_exploded)
-        return reduce(explode(inp))
+        return reduce_it(explode(inp))
     elif np.any(to_be_split := inp >= 10):
         print("Following entry need splitting")
         print(np.argwhere(to_be_split)[0])
-        return reduce(split(inp))
+        return reduce_it(split(inp))
     else:
         print("Reducing is complete, returning following")
         print(inp)
@@ -70,18 +69,21 @@ def reduce(inp: np.ndarray) -> np.ndarray:
 
 
 def main():
-    with open("test5.txt", "r") as f:
+    with open("day18/test5.txt", "r") as f:
         raw_numbers = f.read().splitlines()
 
     cumulative_sum = read_topopgrahy(raw_numbers[0])
-    print(f"{cumulative_sum=}")
+    print(f"cumulative_sum")
+    print(f"{cumulative_sum}")
     for line in raw_numbers[1:]:
         new_number = read_topopgrahy(line)
         print(f"{new_number=}")
         cumulative_sum = add(cumulative_sum, new_number)
-        print(f"{cumulative_sum=}")
-        cumulative_sum = reduce(cumulative_sum)
-        print(f"{cumulative_sum=}")
+        print(f"cumulative_sum")
+        print(f"{cumulative_sum}")
+        cumulative_sum = reduce_it(cumulative_sum)
+        print(f"cumulative_sum")
+        print(f"{cumulative_sum}")
         exit()
 
 
