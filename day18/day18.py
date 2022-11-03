@@ -14,9 +14,9 @@ def read_topopgrahy(inp_list: str) -> np.ndarray:
     current_depth, current_int = -1, 0
     for element in inp_list:
         match element:
-            case '[':
+            case "[":
                 current_depth += 1
-            case ']':
+            case "]":
                 current_depth -= 1
             case "," | " ":
                 continue
@@ -33,19 +33,21 @@ def explode(inp):
     if left > 0:
         left_ngh_idx_y = np.nonzero(notna_inp[:, left - 1])
         res[left_ngh_idx_y, left - 1] += inp[-1, left]
-    if right < inp.shape[1]:
+    if right < inp.shape[1] - 1:
         right_ngb_idx_y = np.nonzero(notna_inp[:, right + 1])
         res[right_ngb_idx_y, right + 1] += inp[-1, right]
     new_col = nan_matrix(inp.shape[0], 1)
     new_col[3] = 0
-    return np.hstack([res[:, :left], new_col, res[:, right + 1:]])
+    return np.hstack([res[:, :left], new_col, res[:, right + 1 :]])
 
 
-def split(inp):
-    to_be_split = np.argwhere(inp > 10)[0]
+def split(inp: np.ndarray) -> np.ndarray:
+    split_canditates = np.argwhere(inp >= 10)
+    print(f"{split_canditates}")
+    to_be_split = np.argwhere(inp >= 10)[0]
     val = inp[*to_be_split]
     inp[*to_be_split] = np.nan
-    new_mat = np.hstack([inp[:, :to_be_split[1] + 1], inp[:, to_be_split[1]:]])
+    new_mat = np.hstack([inp[:, : to_be_split[1] + 1], inp[:, to_be_split[1] :]])
     new_mat[to_be_split[0] + 1, to_be_split[1]] = np.floor(val / 2)
     new_mat[to_be_split[0] + 1, to_be_split[1] + 1] = np.ceil(val / 2)
     return new_mat
@@ -57,7 +59,7 @@ def reduce(inp: np.ndarray) -> np.ndarray:
         print("Following entries on last row need exploding")
         print(to_be_exploded)
         return reduce(explode(inp))
-    elif np.any(to_be_split := inp > 10):
+    elif np.any(to_be_split := inp >= 10):
         print("Following entry need splitting")
         print(np.argwhere(to_be_split)[0])
         return reduce(split(inp))
@@ -80,6 +82,7 @@ def main():
         print(f"{cumulative_sum=}")
         cumulative_sum = reduce(cumulative_sum)
         print(f"{cumulative_sum=}")
+        exit()
 
 
 if __name__ == "__main__":
