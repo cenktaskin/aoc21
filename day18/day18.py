@@ -5,10 +5,12 @@ def nan_matrix(d, w):
     return np.array(d * w * [np.nan]).reshape(d, w)
 
 
-def read_topopgrahy(inp_list: str) -> np.ndarray:
-    # max_depth, int_count = check_topograpgy(inp_list)
-    mat = nan_matrix(max_depth := 5, sum([a.isdigit() for a in inp_list]))
+def add(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    return np.vstack([nan_matrix(1, a.shape[1] + b.shape[1]), np.hstack([a[:-1], b[:-1]])])
 
+
+def read_topopgrahy(inp_list: str) -> np.ndarray:
+    mat = nan_matrix(5, sum([a.isdigit() for a in inp_list]))
     current_depth, current_int = -1, 0
     for element in inp_list:
         match element:
@@ -24,50 +26,49 @@ def read_topopgrahy(inp_list: str) -> np.ndarray:
     return mat
 
 
-def add(a: np.ndarray, b: np.ndarray):
-    new_width = a.shape[1] + b.shape[1]
-    new_mat = nan_matrix(new_depth := 5, new_width)
-    new_mat[1:, :a.shape[1]] = a[:-1]
-    new_mat[1:, -b.shape[1]:] = b[:-1]
-    return new_mat
-
-
 def explode(inp):
-    a = inp[-1]  # last row
-    left, right = np.where(~np.isnan(a))[0][:2]
-    # TODO: implement the case where there is no suitable number
-    # TODO: don't modify the inp, use the res
-    left_ngh_idx_y = np.where(~np.isnan(inp[:, left - 1]))
-    inp[left_ngh_idx_y, left - 1] += inp[-1, left]
-    right_ngb_idx_y = np.where(~np.isnan(inp[:, right + 1]))
-    inp[right_ngb_idx_y, right + 1] += inp[-1, right]
+    notna_inp = ~np.isnan(inp)
+    left, right = np.nonzero(notna_inp[-1])[0][:2]
+    res = inp.copy()
+    if left > 0:
+        left_ngh_idx_y = np.nonzero(notna_inp[:, left - 1])
+        res[left_ngh_idx_y, left - 1] += inp[-1, left]
+    if right < inp.shape[1]:
+        right_ngb_idx_y = np.nonzero(notna_inp[:, right + 1])
+        res[right_ngb_idx_y, right + 1] += inp[-1, right]
     new_col = nan_matrix(inp.shape[0], 1)
     new_col[3] = 0
-    return np.hstack([inp[:, :left], new_col, inp[:, right + 1:]])
+    return np.hstack([res[:, :left], new_col, res[:, right + 1:]])
 
 
 def split(inp):
-    one2split = np.where(inp > 10)[0]
-    val = inp[*one2split]
-    inp[*one2split] = np.nan
-    new_mat = np.hstack([inp[:, :one2split[1] + 1], inp[:, one2split[1]:]])
-    new_mat[one2split[0] + 1, one2split[1]] = np.floor(val / 2)
-    new_mat[one2split[0] + 1, one2split[1] + 1] = np.ceil(val / 2)
+    to_be_split = np.argwhere(inp > 10)[0]
+    val = inp[*to_be_split]
+    inp[*to_be_split] = np.nan
+    new_mat = np.hstack([inp[:, :to_be_split[1] + 1], inp[:, to_be_split[1]:]])
+    new_mat[to_be_split[0] + 1, to_be_split[1]] = np.floor(val / 2)
+    new_mat[to_be_split[0] + 1, to_be_split[1] + 1] = np.ceil(val / 2)
     return new_mat
 
 
-# def reduce(inp):
-#     while True:
-#         if np.where(~np.isnan(inp[-1]))[0]:
-#             inp = explode(inp)
-#             continue
-#
-#     left=np.where(~np.isnan(inp[-1]))[0]
-#     print(left)
+def reduce(inp: np.ndarray) -> np.ndarray:
+    print(f"Array to be reduced\n{inp}")
+    if np.any(to_be_exploded := ~np.isnan(inp[-1])):
+        print("Following entries on last row need exploding")
+        print(to_be_exploded)
+        return reduce(explode(inp))
+    elif np.any(to_be_split := inp > 10):
+        print("Following entry need splitting")
+        print(np.argwhere(to_be_split)[0])
+        return reduce(split(inp))
+    else:
+        print("Reducing is complete, returning following")
+        print(inp)
+        return inp
 
 
-if __name__ == "__main__":
-    with open("test-input.txt", "r") as f:
+def main():
+    with open("test5.txt", "r") as f:
         raw_numbers = f.read().splitlines()
 
     cumulative_sum = read_topopgrahy(raw_numbers[0])
@@ -77,4 +78,9 @@ if __name__ == "__main__":
         print(f"{new_number=}")
         cumulative_sum = add(cumulative_sum, new_number)
         print(f"{cumulative_sum=}")
+        cumulative_sum = reduce(cumulative_sum)
+        print(f"{cumulative_sum=}")
 
+
+if __name__ == "__main__":
+    main()
