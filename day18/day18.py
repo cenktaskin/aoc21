@@ -36,7 +36,7 @@ def explode(inp):
     if right < inp.shape[1] - 1:
         right_ngb_idx_y = np.nonzero(notna_inp[:, right + 1])
         res[right_ngb_idx_y, right + 1] += inp[-1, right]
-    new_col = nan_matrix(inp.shape[0], 1)
+    new_col = nan_matrix(5, 1)
     new_col[3] = 0
     return np.hstack([res[:, :left], new_col, res[:, right + 1 :]])
 
@@ -53,38 +53,61 @@ def split(inp: np.ndarray) -> np.ndarray:
 
 
 def reduce_it(inp: np.ndarray) -> np.ndarray:
-    print(f"Array to be reduced\n{inp}")
-    if np.any(to_be_exploded := ~np.isnan(inp[-1])):
-        print("Following entries on last row need exploding")
-        print(to_be_exploded)
+    if np.any(~np.isnan(inp[-1])):
         return reduce_it(explode(inp))
-    elif np.any(to_be_split := inp >= 10):
-        print("Following entry need splitting")
-        print(np.argwhere(to_be_split)[0])
+    elif np.any(inp >= 10):
         return reduce_it(split(inp))
     else:
-        print("Reducing is complete, returning following")
-        print(inp)
         return inp
 
 
-def main():
-    with open("day18/test5.txt", "r") as f:
-        raw_numbers = f.read().splitlines()
+def calculate_magnitude(inp: np.ndarray) -> int:
+    while True:
+        not_na = np.argwhere(~np.isnan(inp))
+        elevation_canditates = np.argwhere(not_na[:, 0] == not_na[:, 0].max()).flatten()
+        left, right = not_na[elevation_canditates[:2]]
+        new_col = nan_matrix(5, 1)
+        new_col[left[0] - 1] = inp[*left] * 3 + inp[*right] * 2
+        res = np.hstack([inp[:, : left[1]], new_col, inp[:, right[1] + 1 :]])
+        inp = res
+        if left[0] == 0:
+            return new_col[left[0] - 1][0]
 
+
+def part1(raw_numbers):
     cumulative_sum = read_topopgrahy(raw_numbers[0])
-    print(f"cumulative_sum")
-    print(f"{cumulative_sum}")
     for line in raw_numbers[1:]:
         new_number = read_topopgrahy(line)
-        print(f"{new_number=}")
         cumulative_sum = add(cumulative_sum, new_number)
-        print(f"cumulative_sum")
-        print(f"{cumulative_sum}")
         cumulative_sum = reduce_it(cumulative_sum)
         print(f"cumulative_sum")
         print(f"{cumulative_sum}")
-        exit()
+    result = calculate_magnitude(cumulative_sum)
+    return result
+
+
+def part2(raw_numbers):
+    results = []
+    for line_i in raw_numbers:
+        nr1 = read_topopgrahy(line_i)
+        for line_j in raw_numbers:
+            if line_i == line_j:
+                results.append(0)
+            nr2 = read_topopgrahy(line_j)
+            cumulative_sum = add(nr1, nr2)
+            cumulative_sum = reduce_it(cumulative_sum)
+            results.append(calculate_magnitude(cumulative_sum))
+    return max(results)
+
+
+def main():
+    with open("day18/input.txt", "r") as f:
+        raw_numbers = f.read().splitlines()
+
+    # result = part1(raw_numbers)
+    result = part2(raw_numbers)
+
+    print(result)
 
 
 if __name__ == "__main__":
