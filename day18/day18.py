@@ -1,34 +1,13 @@
 import numpy as np
 
 
-# with open("input.txt", "r") as f:
-#     a = f.readlines()
-
-# TODO: check_topograpgy gereksiz, derinlik en fazla her zaman 5, sabit tut
-def check_topograpgy(inp_list):
-    depth, max_depth, int_count = 0, 0, 0
-    for element in inp_list:
-        match element:
-            case '[':
-                depth += 1
-            case ']':
-                depth -= 1
-            case "," | " ":
-                continue
-            case _:  # int
-                int_count += 1
-        if depth > max_depth:
-            max_depth = depth
-    return max_depth, int_count
-
-
 def nan_matrix(d, w):
     return np.array(d * w * [np.nan]).reshape(d, w)
 
 
-def read_topopgrahy(inp_list):
-    max_depth, int_count = check_topograpgy(inp_list)
-    mat = nan_matrix(max_depth, int_count)
+def read_topopgrahy(inp_list: str) -> np.ndarray:
+    # max_depth, int_count = check_topograpgy(inp_list)
+    mat = nan_matrix(max_depth := 5, sum([a.isdigit() for a in inp_list]))
 
     current_depth, current_int = -1, 0
     for element in inp_list:
@@ -45,12 +24,11 @@ def read_topopgrahy(inp_list):
     return mat
 
 
-def add(a, b):
-    new_depth = max(a.shape[0], b.shape[0]) + 1
+def add(a: np.ndarray, b: np.ndarray):
     new_width = a.shape[1] + b.shape[1]
-    new_mat = nan_matrix(new_depth, new_width)
-    new_mat[1:a.shape[0] + 1, :a.shape[1]] = a
-    new_mat[1:b.shape[0] + 1, -b.shape[1]:] = b
+    new_mat = nan_matrix(new_depth := 5, new_width)
+    new_mat[1:, :a.shape[1]] = a[:-1]
+    new_mat[1:, -b.shape[1]:] = b[:-1]
     return new_mat
 
 
@@ -69,33 +47,34 @@ def explode(inp):
 
 
 def split(inp):
-    print(np.where(inp > 10))
-    print(inp)
+    one2split = np.where(inp > 10)[0]
+    val = inp[*one2split]
+    inp[*one2split] = np.nan
+    new_mat = np.hstack([inp[:, :one2split[1] + 1], inp[:, one2split[1]:]])
+    new_mat[one2split[0] + 1, one2split[1]] = np.floor(val / 2)
+    new_mat[one2split[0] + 1, one2split[1] + 1] = np.ceil(val / 2)
+    return new_mat
 
 
-raw_a = "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"
-raw_a = "[1,2]"
-raw_b = "[[3,4],5]"
-raw_c = "[[[[4,3],4],4],[7,[[8,4],9]]]"
-raw_d = "[1,1]"
-
-a = read_topopgrahy(raw_a)
-b = read_topopgrahy(raw_b)
-
-# print(f"{a=}")
-# print(f"{b=}")
+# def reduce(inp):
+#     while True:
+#         if np.where(~np.isnan(inp[-1]))[0]:
+#             inp = explode(inp)
+#             continue
 #
-# sum = add(a, b)
-# print(f"{sum=}")
-# print(explode(sum))
+#     left=np.where(~np.isnan(inp[-1]))[0]
+#     print(left)
 
-c = read_topopgrahy(raw_c)
-d = read_topopgrahy(raw_d)
-print(f"{c=}")
-print(f"{d=}")
-sum = add(c, d)
-print(f"{sum=}")
-res = explode(sum)
-print(f"{res=}")
-res = explode(res)
-print(f"{res=}")
+
+if __name__ == "__main__":
+    with open("test-input.txt", "r") as f:
+        raw_numbers = f.read().splitlines()
+
+    cumulative_sum = read_topopgrahy(raw_numbers[0])
+    print(f"{cumulative_sum=}")
+    for line in raw_numbers[1:]:
+        new_number = read_topopgrahy(line)
+        print(f"{new_number=}")
+        cumulative_sum = add(cumulative_sum, new_number)
+        print(f"{cumulative_sum=}")
+
