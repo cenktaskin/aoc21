@@ -6,7 +6,9 @@ def nan_matrix(d, w):
 
 
 def add(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    return np.vstack([nan_matrix(1, a.shape[1] + b.shape[1]), np.hstack([a[:-1], b[:-1]])])
+    return np.vstack(
+        [nan_matrix(1, a.shape[1] + b.shape[1]), np.hstack([a[:-1], b[:-1]])]
+    )
 
 
 def read_topopgrahy(inp_list: str) -> np.ndarray:
