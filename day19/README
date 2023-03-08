@@ -1,0 +1,6 @@
+Note on first day:
+Needs quite bit of robotics
+A good lead: The relationship between beacons stay the same, an idea would be to make a list of vectors defining distances between each and move from there
+- After detecting the same beacon by a comparison btw scanners dst matrix 
+- We can find 24 possible transformations(posn+orientation) of second scanner for each beacon pair (beacon wrt 0 and beacon wrt 1)
+
