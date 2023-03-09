@@ -42,6 +42,16 @@ def create_distance_matrix(scan_data):
     return dst_mat
 
 
+def pad_columns_like(mat0, mat1):
+    col0 = mat0.shape[1]
+    col1 = mat1.shape[1]
+    if col0 < col1:
+        mat0 = np.hstack([mat0, np.zeros((col0, mat1.shape[0] - mat0.shape[0]))])
+    else:
+        mat1 = np.hstack([mat1, np.zeros((col1, mat0.shape[0] - mat1.shape[0]))])
+    return mat0, mat1
+
+
 def map_common_points(dst0, dst1):
     if (dim0 := dst0.shape[0]) != (dim1 := dst1.shape[0]):
         if dim0 < dim1:
@@ -110,26 +120,23 @@ def find_transformation_path(mat, src, dst, been=[]):
 
 
 def main():
-    # we could probably only solve it by checking the distances
     input_file = "test-input.txt"
     with open(f"day19/{input_file}", "r") as f:
         raw_input = f.read().splitlines()
 
     # print(raw_input)
     scanners = parse_input(raw_input)
-
-    relations_mat = np.zeros((len(scanners), len(scanners)))
-    for ind_scanner0 in range(len(scanners)):
-        for ind_scanner1 in range(ind_scanner0 + 1, len(scanners)):
-            h_mat = find_transformation_btw(scanners, ind_scanner0, ind_scanner1)
-            if h_mat is not None:
-                print(f"Relating {ind_scanner1} to {ind_scanner0}")
-                print(h_mat)
-                relations_mat[ind_scanner0, ind_scanner1] += 1
-
-    print(relations_mat)
-    relations_mat = relations_mat + relations_mat.T
-    find_transformation_path(relations_mat, 0, 2)
+    all_vals = []
+    for sca in scanners:
+        dst_mat = list(create_distance_matrix(sca).flatten())
+        all_vals += dst_mat
+    all_vals = np.array(all_vals)
+    v, c = np.unique(all_vals, return_counts=True)
+    v = v[v > 0]
+    print(v)
+    print(len(v))
+    print(c)
+    # we could probably only solve it by checking the distances
 
 
 if __name__ == "__main__":
