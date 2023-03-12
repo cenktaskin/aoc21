@@ -24,6 +24,10 @@ def euclidean_distance(p0, p1):
     return np.sqrt(np.sum(np.square(p0 - p1), axis=-1))
 
 
+def manhattan_distance(p0, p1):
+    return np.sum(np.abs(p0 - p1), axis=-1)
+
+
 def invert_h(h):
     r = h[:-1, :-1]
     t = h[:-1, -1]
@@ -34,10 +38,10 @@ def invert_h(h):
     return h_inv
 
 
-def create_distance_matrix(scan_data):
+def create_distance_matrix(scan_data, distance_metric=euclidean_distance):
     dst_mat = np.zeros((len(scan_data), len(scan_data)))
     for i, p in enumerate(scan_data):
-        dst_mat[i, i:] = euclidean_distance(p, scan_data[i:])
+        dst_mat[i, i:] = distance_metric(p, scan_data[i:])
     return dst_mat
 
 
@@ -75,10 +79,22 @@ def make_points_homogenous(p):
 
 
 def solve_for_h(p0, p1):
-    src = make_points_homogenous(p0)
-    dst = make_points_homogenous(p1)
-    inv = dst.T @ np.linalg.inv(dst @ dst.T)
-    res = np.round(src @ inv).astype(int)
+    src, dst = (make_points_homogenous(p) for p in [p0, p1])
+    right_inv_dst = dst.T @ np.linalg.inv(dst @ dst.T)
+    approx_res = src @ right_inv_dst
+    res = np.round(approx_res).astype(int)
+    p1_0 = dst.T @ res[:-1].T
+    error = np.sum(p1_0 - p0)
+    logging.debug(f"Solver: Solved for H with error:{error}")
+    if error > 0.001:
+        ##TODO: Error was here, when relating 4 to 16
+        ## Probably there is a mismatch of beacons
+        ## Two pairs with exact distances
+        rounding_error = np.sum(abs(approx_res - res))
+        print(f"{rounding_error=}")
+        print(p1_0)
+        print(p0)
+        return None
     return res
 
 
@@ -87,6 +103,7 @@ def find_transformation_btw(data, ind0, ind1):
     dst_mat1 = create_distance_matrix(data[ind1])
     ind_src, ind_dst = map_common_points(dst_mat0, dst_mat1)
     if ind_src is not None:
+        logging.debug(f"Trying to solve H{ind0}_{ind1}")
         h_mat = solve_for_h(data[ind0][ind_src], data[ind1][ind_dst])
         return h_mat
     else:
@@ -133,29 +150,18 @@ def main():
     points = []
     for ind in scanners:
         beaconsi_0 = transformation_dict[0][ind] @ make_points_homogenous(scanners[ind])
-        points.append(beaconsi_0.T.astype(int))
-    points = np.vstack(points)[:, :-1]
+        beaconsi_0 = np.round(beaconsi_0[:-1].T).astype(int)
+        points.append(beaconsi_0)
+    points = np.vstack(points)
     print(f"Total scanned beacon count:{len(points)}")
     unique_points = np.unique(points, axis=0)
     print(f"Unique beacon count:{len(unique_points)}")
-    # print(unique_points)
 
-    # p0 = scanners[0]
-    # p1 = scanners[1]
-    # transformation = transformation_dict[0][1]
-    # p1_0 = transformation @ make_points_homogenous(p1)
-    # p1_0 = p1_0[:-1, :].T.astype(int)
-    # print(p0)
-    # print(p1_0)
-    # set0 = set(tuple(x) for x in p0)
-    # set1 = set(tuple(x) for x in p1_0)
-    # commons = np.array([x for x in set0 & set1])
-    # if len(commons) > 0:
-    #     print(commons)
-    #     commons_1 = invert_h(transformation_dict[0][1]) @ make_points_homogenous(
-    #         commons
-    #     )
-    #     print(commons_1[:-1, :].T)
+    scanners_abs_posn = np.array(
+        [transformation_dict[0][i][:-1, -1] for i in transformation_dict[0]]
+    )
+    manhattan_dst_mat = create_distance_matrix(scanners_abs_posn, manhattan_distance)
+    print(np.max(manhattan_dst_mat))
 
 
 def parse_args(args: list) -> list:
