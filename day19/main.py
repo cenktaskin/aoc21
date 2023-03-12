@@ -5,19 +5,17 @@ import numpy as np
 
 
 def parse_input(inp: str) -> dict[int, np.ndarray]:
-    scan_data = {}
+    scans = {}
     report_blocks = [x.split("\n") for x in inp.split("\n\n")]
     for block in report_blocks:
-        scanner_ind = int(block[0].split(" ")[2])
-        logging.debug(f"Parser:New scanner is being read: {scanner_ind}")
-        scan_data[scanner_ind] = np.array(
+        ind = int(block[0].split(" ")[2])
+        logging.debug(f"Parser:New scanner is being read: {ind}")
+        scans[ind] = np.array(
             [[int(i) for i in line.split(",")] for line in block[1:] if line != ""]
         )
-        logging.debug(f"Parser:Read {len(scan_data[scanner_ind])} beacons.")
-    logging.debug(
-        f"Total beacons read: {sum([len(scan_data[sc]) for sc in scan_data])}"
-    )
-    return scan_data
+        logging.debug(f"Parser:Read {len(scans[ind])} beacons.")
+    logging.debug(f"Total beacons read: {sum([len(scans[sc]) for sc in scans])}")
+    return scans
 
 
 def euclidean_distance(p0, p1):
@@ -33,6 +31,10 @@ def invert_h(h):
     return np.vstack(
         [np.hstack([r.T, np.reshape(-r.T @ t, (3, 1))]), np.array([0, 0, 0, 1])]
     )
+
+
+def make_points_homogenous(p):
+    return np.hstack([p, np.ones((len(p), 1))]).T
 
 
 def create_distance_matrix(scan_data, metric=euclidean_distance):
@@ -51,6 +53,7 @@ def pad_cols_if_necessary(dst0, dst1):
 
 
 def map_common_points(dst0, dst1):
+    logging.debug("Mapping common pts")
     dst0, dst1 = pad_cols_if_necessary(dst0, dst1)
     all_dst = np.vstack([dst0, dst1])
     vals, idxs, cnts = np.unique(all_dst, return_index=True, return_counts=True)
@@ -64,36 +67,20 @@ def map_common_points(dst0, dst1):
     map_mat = np.zeros((len(dst0), len(dst1)))
     for i in range(len(vals)):
         idx0 = idxs[i] // dst0.shape[1], idxs[i] % dst0.shape[1]
-        idx1 = map(int, np.where(dst1 == vals[i]))
+        idx1 = np.where(dst1 == vals[i])
         for ind in [(x, y) for y in idx1 for x in idx0]:
             map_mat[ind] += 1
-    ind_src, ind_dst = np.where(map_mat > 1)
+
+    # The correct beacon will appear on all possible ambiguous pairs
+    # 11 in case of 12 common points
+    ind_src, ind_dst = np.where(map_mat >= 11)
     return ind_src, ind_dst
-
-
-def make_points_homogenous(p):
-    return np.hstack([p, np.ones((len(p), 1))]).T
 
 
 def solve_for_h(p0, p1):
     src, dst = (make_points_homogenous(p) for p in [p0, p1])
     right_inv_dst = dst.T @ np.linalg.inv(dst @ dst.T)
-    approx_res = src @ right_inv_dst
-    res = np.round(approx_res).astype(int)
-    p1_0 = dst.T @ res[:-1].T
-    error = np.sum(p1_0 - p0)
-    logging.debug(f"Solver: Solved! Error:{error}")
-    if error > 0:
-        ##TODO: Error was here, when relating 4 to 16
-        ## Probably there is a mismatch of beacons
-        ## Two pairs with exact distances
-        # rounding_error = np.sum(abs(approx_res - res))
-        # print(f"{rounding_error=}")
-        # print(p1_0)
-        # print(p0)
-        logging.debug("Ignoring this transformation")
-        return None
-    return res
+    return np.round(src @ right_inv_dst).astype(int)
 
 
 def find_transformation_btw(data, ind0, ind1):
@@ -136,16 +123,7 @@ def create_transformations_dict(scan_data):
     return explored_dict
 
 
-def main():
-    input_file = "input.txt"
-    with open(f"day19/{input_file}", "r") as f:
-        raw_input = f.read()
-
-    scanners = parse_input(raw_input)
-
-    transformations = create_transformations_dict(scanners)
-
-    # Part 1
+def part1(scanners, transformations):
     points = []
     for ind in scanners:
         beaconsi_0 = transformations[0][ind] @ make_points_homogenous(scanners[ind])
@@ -156,14 +134,23 @@ def main():
     unique_points = np.unique(points, axis=0)
     print(f"Unique beacon count: {len(unique_points)}")
 
-    # Part 2
-    scanners_0 = np.array(
-        [transformations[0][i][:-1, -1] for i in transformations[0]], dtype=int
-    )
-    manhattan_dst_mat = create_distance_matrix(scanners_0, manhattan_distance).astype(
-        int
-    )
-    print(f"Maximum manhattan distance btw scanners: {np.max(manhattan_dst_mat)}")
+
+def part2(h_dict):
+    scanners_0 = np.array([h_dict[0][i][:-1, -1] for i in h_dict[0]])
+    manhattan_dsts = create_distance_matrix(scanners_0, manhattan_distance).astype(int)
+    print(f"Maximum manhattan distance btw scanners: {np.max(manhattan_dsts)}")
+
+
+def main():
+    input_file = "input.txt"
+    with open(f"day19/{input_file}", "r") as f:
+        raw_input = f.read()
+
+    scanners = parse_input(raw_input)
+    transformations = create_transformations_dict(scanners)
+
+    part1(scanners, transformations)
+    part2(transformations)
 
 
 def parse_args(args: list) -> list:
@@ -174,6 +161,5 @@ def parse_args(args: list) -> list:
 
 
 if __name__ == "__main__":
-    # The answer is 306
     parse_args(sys.argv)
     main()
