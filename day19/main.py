@@ -4,34 +4,24 @@ import logging
 import numpy as np
 
 
-def parse_args(args: list) -> list:
-    if "--debug" in args:
-        logging.basicConfig(level=logging.DEBUG)
-        args.remove("--debug")
-    return args
-
-
-def parse_input(inp: list[str]) -> list[np.ndarray]:
-    scanner_list, beacon_list, scanner_name = [], [], None
-    for line in inp:
-        if line[:3] == "---":
-            scanner_name = "".join(line.split(" ")[1:-1])
-            logging.debug(f"Parser:New scanner is being read: {scanner_name}")
-            continue
-        elif line == "":
-            logging.debug(
-                f"Parser:Scanner reading is done. Total {len(beacon_list)} beacons"
-            )
-            scanner_list.append(np.array(beacon_list))
-            beacon_list = []
-        else:
-            beacon_list.append(np.array([int(i) for i in line.split(",")]))
-            logging.debug(f"Parser:Beacon at {beacon_list[-1]} added to {scanner_name}")
-    return scanner_list
+def parse_input(inp: str) -> dict[int, np.ndarray]:
+    scan_data = {}
+    report_blocks = [x.split("\n") for x in inp.split("\n\n")]
+    for block in report_blocks:
+        scanner_ind = int(block[0].split(" ")[2])
+        logging.debug(f"Parser:New scanner is being read: {scanner_ind}")
+        scan_data[scanner_ind] = np.array(
+            [[int(i) for i in line.split(",")] for line in block[1:] if line != ""]
+        )
+        logging.debug(f"Parser:Read {len(scan_data[scanner_ind])} beacons.")
+    logging.debug(
+        f"Total beacons read: {sum([len(scan_data[sc]) for sc in scan_data])}"
+    )
+    return scan_data
 
 
 def euclidean_distance(p0, p1):
-    return np.sqrt(np.sum(np.square(p0.copy() - p1.copy()), axis=-1))
+    return np.sqrt(np.sum(np.square(p0 - p1), axis=-1))
 
 
 def invert_h(h):
@@ -69,6 +59,7 @@ def map_common_points(dst0, dst1):
     if len(vals) < 66:
         return None, None
 
+    # TODO: change this part, doesn't look good
     map_mat = np.zeros((len(dst0), len(dst1)))
     for i in range(len(vals)):
         idx0 = idxs[i] // dst0.shape[1], idxs[i] % dst0.shape[1]
@@ -102,22 +93,6 @@ def find_transformation_btw(data, ind0, ind1):
         return None
 
 
-def print_dict_of_dict(d):
-    for key in d:
-        if len(d[key].keys()) >= 1:
-            print(f"{key}->{list(d[key].keys())}")
-
-
-def deduct_transformations(scanners):
-    transformation_dict = {i: {} for i in range(len(scanners))}
-    for ind_scanner0 in range(len(scanners)):
-        for ind_scanner1 in range(ind_scanner0 + 1, len(scanners)):
-            h_mat = find_transformation_btw(scanners, ind_scanner0, ind_scanner1)
-            if h_mat is not None:
-                transformation_dict[ind_scanner0][ind_scanner1] = h_mat
-                transformation_dict[ind_scanner1][ind_scanner0] = invert_h(h_mat)
-
-
 def explore_transformations(h_dict):
     if len(h_dict) - 1 == len(h_dict[0]):
         logging.debug("Explorer:Populated the dict enough.")
@@ -132,13 +107,14 @@ def explore_transformations(h_dict):
 
 
 def create_transformations_dict(scan_data):
-    transformation_dict = {i: {} for i in range(len(scan_data))}
-    for ind_scanner0 in range(len(scan_data)):
-        for ind_scanner1 in range(ind_scanner0 + 1, len(scan_data)):
+    transformation_dict = {i: {} for i in scan_data.keys()}
+    for ind_scanner0 in scan_data:
+        for ind_scanner1 in range(ind_scanner0 + 1, max(scan_data) + 1):
             h_mat = find_transformation_btw(scan_data, ind_scanner0, ind_scanner1)
-            if h_mat is not None:
-                transformation_dict[ind_scanner0][ind_scanner1] = h_mat
-                transformation_dict[ind_scanner1][ind_scanner0] = invert_h(h_mat)
+            if h_mat is None:
+                continue
+            transformation_dict[ind_scanner0][ind_scanner1] = h_mat
+            transformation_dict[ind_scanner1][ind_scanner0] = invert_h(h_mat)
 
     explored_dict = explore_transformations(transformation_dict)
     explored_dict[0][0] = np.eye(4)
@@ -148,23 +124,48 @@ def create_transformations_dict(scan_data):
 def main():
     input_file = "input.txt"
     with open(f"day19/{input_file}", "r") as f:
-        raw_input = f.read().splitlines()
+        raw_input = f.read()
 
     scanners = parse_input(raw_input)
 
     transformation_dict = create_transformations_dict(scanners)
 
     points = []
-    for i, sca in enumerate(scanners):
-        beacons_wrt0 = transformation_dict[0][i] @ make_points_homogenous(sca)
-        points.append(beacons_wrt0.T.astype(int))
+    for ind in scanners:
+        beaconsi_0 = transformation_dict[0][ind] @ make_points_homogenous(scanners[ind])
+        points.append(beaconsi_0.T.astype(int))
     points = np.vstack(points)[:, :-1]
     print(f"Total scanned beacon count:{len(points)}")
     unique_points = np.unique(points, axis=0)
     print(f"Unique beacon count:{len(unique_points)}")
     # print(unique_points)
 
+    # p0 = scanners[0]
+    # p1 = scanners[1]
+    # transformation = transformation_dict[0][1]
+    # p1_0 = transformation @ make_points_homogenous(p1)
+    # p1_0 = p1_0[:-1, :].T.astype(int)
+    # print(p0)
+    # print(p1_0)
+    # set0 = set(tuple(x) for x in p0)
+    # set1 = set(tuple(x) for x in p1_0)
+    # commons = np.array([x for x in set0 & set1])
+    # if len(commons) > 0:
+    #     print(commons)
+    #     commons_1 = invert_h(transformation_dict[0][1]) @ make_points_homogenous(
+    #         commons
+    #     )
+    #     print(commons_1[:-1, :].T)
+
+
+def parse_args(args: list) -> list:
+    if "--debug" in args:
+        logging.basicConfig(level=logging.DEBUG)
+        args.remove("--debug")
+    return args
+
 
 if __name__ == "__main__":
+    # The answer is 306
     parse_args(sys.argv)
     main()
