@@ -29,19 +29,16 @@ def manhattan_distance(p0, p1):
 
 
 def invert_h(h):
-    r = h[:-1, :-1]
-    t = h[:-1, -1]
-    h_inv = np.zeros((4, 4), dtype=int)
-    h_inv[-1, -1] = 1
-    h_inv[:-1, :-1] = r.T
-    h_inv[:-1, -1] = -r.T @ t
-    return h_inv
+    r, t = h[:-1, :-1], h[:-1, -1]
+    return np.vstack(
+        [np.hstack([r.T, np.reshape(-r.T @ t, (3, 1))]), np.array([0, 0, 0, 1])]
+    )
 
 
-def create_distance_matrix(scan_data, distance_metric=euclidean_distance):
+def create_distance_matrix(scan_data, metric=euclidean_distance):
     dst_mat = np.zeros((len(scan_data), len(scan_data)))
     for i, p in enumerate(scan_data):
-        dst_mat[i, i:] = distance_metric(p, scan_data[i:])
+        dst_mat[i, i:] = metric(p, scan_data[i:])
     return dst_mat
 
 
@@ -85,15 +82,16 @@ def solve_for_h(p0, p1):
     res = np.round(approx_res).astype(int)
     p1_0 = dst.T @ res[:-1].T
     error = np.sum(p1_0 - p0)
-    logging.debug(f"Solver: Solved for H with error:{error}")
-    if error > 0.001:
+    logging.debug(f"Solver: Solved! Error:{error}")
+    if error > 0:
         ##TODO: Error was here, when relating 4 to 16
         ## Probably there is a mismatch of beacons
         ## Two pairs with exact distances
-        rounding_error = np.sum(abs(approx_res - res))
-        print(f"{rounding_error=}")
-        print(p1_0)
-        print(p0)
+        # rounding_error = np.sum(abs(approx_res - res))
+        # print(f"{rounding_error=}")
+        # print(p1_0)
+        # print(p0)
+        logging.debug("Ignoring this transformation")
         return None
     return res
 
@@ -145,23 +143,27 @@ def main():
 
     scanners = parse_input(raw_input)
 
-    transformation_dict = create_transformations_dict(scanners)
+    transformations = create_transformations_dict(scanners)
 
+    # Part 1
     points = []
     for ind in scanners:
-        beaconsi_0 = transformation_dict[0][ind] @ make_points_homogenous(scanners[ind])
+        beaconsi_0 = transformations[0][ind] @ make_points_homogenous(scanners[ind])
         beaconsi_0 = np.round(beaconsi_0[:-1].T).astype(int)
         points.append(beaconsi_0)
     points = np.vstack(points)
-    print(f"Total scanned beacon count:{len(points)}")
+    print(f"Total scanned beacon count: {len(points)}")
     unique_points = np.unique(points, axis=0)
-    print(f"Unique beacon count:{len(unique_points)}")
+    print(f"Unique beacon count: {len(unique_points)}")
 
-    scanners_abs_posn = np.array(
-        [transformation_dict[0][i][:-1, -1] for i in transformation_dict[0]]
+    # Part 2
+    scanners_0 = np.array(
+        [transformations[0][i][:-1, -1] for i in transformations[0]], dtype=int
     )
-    manhattan_dst_mat = create_distance_matrix(scanners_abs_posn, manhattan_distance)
-    print(np.max(manhattan_dst_mat))
+    manhattan_dst_mat = create_distance_matrix(scanners_0, manhattan_distance).astype(
+        int
+    )
+    print(f"Maximum manhattan distance btw scanners: {np.max(manhattan_dst_mat)}")
 
 
 def parse_args(args: list) -> list:
