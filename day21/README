@@ -1,0 +1,8 @@
+first part was easy/boring
+---
+for the second, 
+- one idea is to create a matrix volume where the last dim represent the diff
+  probable outcomes that round, which at the end of the round supplied with the
+  modulo operator and flattened to a matrix
+- another idea is to utilize the independence of each round and player and
+  calculate them separately and be clever with the combinatoric
