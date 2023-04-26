@@ -1,0 +1,3 @@
+a simple conv operation
+
+infinity is not a problem, just use padding to evaluate the border regions and check infinite fields separately, they will give out a pattern
