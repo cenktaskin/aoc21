@@ -1,17 +1,11 @@
-first part was easy/boring
+First part was easy/boring.
 ---
-for the second, 
-- one idea is to create a matrix volume where the last dim represent the diff
-  probable outcomes that round, which at the end of the round supplied with the
-  modulo operator and flattened to a matrix
-- another idea is to utilize the independence of each round and player and
-  calculate them separately and be clever with the combinatoric
-
----
-Each round for each player we get 27 diff. possible rolls, although their order
-won't matter, their sum do.
+Second part was tricky.
+Each round for each player we get 27 new universes. Order of the rolls doesn't
+matter, their sum do.
 Possible sums : `[3,4,5,6,7,8,9]`
     Occurance : `[1,3,6,7,6,3,1]`
-Idea: Squash each universe to a number of occurance rather than keeping them as
-a distinct entry, they don't matter as long as they are at the same spot, so
-each round doesn't add 27 possibilities just 7, as above.
+
+We only need to keep track of the current score and the posn, amount of
+universes in that state can be the value at that cell. The resulting data
+structure is `current_score X posn`.
