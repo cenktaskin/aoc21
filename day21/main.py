@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import logging
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +16,13 @@ def parse_input(inp: str):
     return [int(i.split(": ")[1]) for i in inp.split("\n")[:-1]]
 
 
+def parse_args(args: list) -> list:
+    if "--debug" in args:
+        logging.basicConfig(level=logging.DEBUG)
+        args.remove("--debug")
+    return args
+
+
 def part1(input):
     posn = [i - 1 for i in input]
     score = [0, 0]
@@ -24,17 +33,16 @@ def part1(input):
         posn[i] = (posn[i] + roll) % 10
         score[i] += posn[i] + 1
         t += 1
-        # print(f"{roll=}")
-        # print(f"{posn[i]=},{score[i]=}")
+        logging.info(f"{roll=}")
+        logging.info(f"{posn[i]=},{score[i]=}")
     print(f"Result:{t*3*min(score)}")
 
 
 def part2(initial_posn):
-    def one_round(mat: np.array):
+    def one_round(mat: np.ndarray) -> (np.ndarray, int):
         res_mat = np.zeros_like(mat)
         won = 0
-        # Could be done without the second loop since prob. end posns are
-        # deterministic
+        # Could be done without the second loop since end posns are known
         for pnt_i, pos_i in zip(*np.nonzero(mat)):
             count = mat[pnt_i, pos_i]
             distrb = np.array([1, 3, 6, 7, 6, 3, 1], dtype=int) * count
@@ -51,17 +59,19 @@ def part2(initial_posn):
     players[0, initial_posn[0] - 1, 0] += 1
     players[0, initial_posn[1] - 1, 1] += 1
     wins = [0, 0]
+    i = 0
     while np.any(players > 0):
-        for i in range(2):
-            res, won = one_round(players[..., i])
-            players[..., i] = res
-            # print(f"Player {i} played")
-            # print(players[..., i])
-            # print(f"Won in:{won}")
-            # print(f"Total universes:{np.sum(players, axis=(0,1))}")
-            wins[i] += won * np.sum(players[..., abs(1 - i)])
-            # print(f"{global_wins=}")
-            # _ = input("") # to debug each play
+        res, won = one_round(players[..., i])
+        players[..., i] = res
+        logging.info(f"Player {i} played")
+        logging.info(f"Current multiverse\n{players[..., i]}")
+        logging.info(f"Won in {won} universes")
+        logging.info(f"Universe count:{np.sum(players, axis=(0,1))}")
+        # all possible win scenarios
+        wins[i] += won * np.sum(players[..., abs(1 - i)])
+        logging.info(f"{wins=}")
+        # _ = input("") # to debug each play
+        i = abs(1 - i)
     print(f"Result:{max(wins)}")
 
 
@@ -72,4 +82,5 @@ def main():
 
 
 if __name__ == "__main__":
+    parse_args(sys.argv)
     main()
