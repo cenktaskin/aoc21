@@ -42,9 +42,14 @@ def part1(input):
         logging.info(f"Current sum:{mat.sum()}")
 
 
+def part2(input):
+    pass
+
+
 def main():
-    input = parse_input(read_input("test-input.txt"))
-    part1(input)
+    input = parse_input(read_input("input.txt"))
+    # part1(input)
+    part2(input)
 
 
 if __name__ == "__main__":
